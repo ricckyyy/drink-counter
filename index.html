@@ -132,6 +132,8 @@
       text-align: center;
     }
 
+    .drink-btn-placeholder { visibility: hidden; }
+
     /* 酒レベルの色 */
     .lv0 { color: #4ade80; }
     .lv1 { color: #a3e635; }
@@ -240,6 +242,17 @@
       <span class="label">サワー/ジントニ</span>
       <span class="count" id="count-sour">0</span>
     </button>
+    <button class="drink-btn" id="btn-highball" data-type="highball">
+      <span class="icon">🥃</span>
+      <span class="label">ハイボール</span>
+      <span class="count" id="count-highball">0</span>
+    </button>
+    <button class="drink-btn" id="btn-sake" data-type="sake">
+      <span class="icon">🍶</span>
+      <span class="label">日本酒/焼酎</span>
+      <span class="count" id="count-sake">0</span>
+    </button>
+    <div class="drink-btn-placeholder"></div>
   </div>
 
   <div class="summary-cards">
@@ -316,13 +329,13 @@
     const raw = localStorage.getItem(STORAGE_KEY);
     const today = todayStr();
     if (!raw) {
-      return { date: today, beer: 0, wine: 0, sour: 0, weekly: 0 };
+      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: 0 };
     }
     const saved = JSON.parse(raw);
     if (saved.date !== today) {
-      return { date: today, beer: 0, wine: 0, sour: 0, weekly: saved.weekly ?? 0 };
+      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: saved.weekly ?? 0 };
     }
-    return saved;
+    return { highball: 0, sake: 0, ...saved };
   }
 
   function saveData(data) {
@@ -334,11 +347,11 @@
   function render() {
     document.getElementById('dateDisplay').textContent = todayDisplay();
 
-    ['beer', 'wine', 'sour'].forEach(type => {
+    ['beer', 'wine', 'sour', 'highball', 'sake'].forEach(type => {
       document.getElementById(`count-${type}`).textContent = state[type];
     });
 
-    const total = state.beer + state.wine + state.sour;
+    const total = state.beer + state.wine + state.sour + state.highball + state.sake;
     const lvInfo = getLevel(total);
 
     const totalEl = document.getElementById('totalCans');
@@ -378,7 +391,7 @@
   // ボタンの長押し処理
   const LONG_PRESS_MS = 500;
 
-  ['beer', 'wine', 'sour'].forEach(type => {
+  ['beer', 'wine', 'sour', 'highball', 'sake'].forEach(type => {
     const btn = document.getElementById(`btn-${type}`);
     let timer = null;
     let isLongPress = false;
@@ -436,10 +449,12 @@
   // リセット
   document.getElementById('resetBtn').addEventListener('click', () => {
     if (!confirm('今日のカウントをリセットしますか？')) return;
-    const todayTotal = state.beer + state.wine + state.sour;
+    const todayTotal = state.beer + state.wine + state.sour + state.highball + state.sake;
     state.beer = 0;
     state.wine = 0;
     state.sour = 0;
+    state.highball = 0;
+    state.sake = 0;
     state.weekly = Math.max(0, state.weekly - todayTotal);
     state.date = todayStr();
     saveData(state);
