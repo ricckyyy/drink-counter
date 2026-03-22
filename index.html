@@ -134,9 +134,11 @@
 
     /* 酒レベルの色 */
     .lv0 { color: #4ade80; }
-    .lv1 { color: #facc15; }
-    .lv2 { color: #fb923c; }
-    .lv3 { color: #f87171; }
+    .lv1 { color: #a3e635; }
+    .lv2 { color: #facc15; }
+    .lv3 { color: #fb923c; }
+    .lv4 { color: #ef4444; }
+    .lv5 { color: #dc2626; }
 
     /* 週間ゲージ */
     .weekly-section {
@@ -277,17 +279,21 @@
   const WEEKLY_GOAL = 5;
 
   const levels = [
-    { max: 0,        lv: 0, score: 0,  label: '素面',    cls: 'lv0' },
-    { max: 3,        lv: 1, score: 3,  label: 'ほろ酔い', cls: 'lv1' },
-    { max: 7,        lv: 2, score: 7,  label: '酔い気味', cls: 'lv2' },
-    { max: Infinity, lv: 3, score: 10, label: 'べろべろ', cls: 'lv3' },
+    { lv: 0, score: 0,  label: '素面',     cls: 'lv0' },
+    { lv: 1, score: 1,  label: '爽快期',   cls: 'lv1' },
+    { lv: 2, score: 3,  label: 'ほろ酔い期', cls: 'lv2' },
+    { lv: 3, score: 5,  label: '酩酊初期', cls: 'lv3' },
+    { lv: 4, score: 7,  label: '酩酊極期', cls: 'lv4' },
+    { lv: 5, score: 10, label: '泥酔期',   cls: 'lv5' },
   ];
 
   function getLevel(total) {
     if (total === 0) return levels[0];
-    if (total <= 3) return levels[1];
-    if (total <= 7) return levels[2];
-    return levels[3];
+    if (total <= 1) return levels[1];
+    if (total <= 3) return levels[2];
+    if (total <= 5) return levels[3];
+    if (total <= 9) return levels[4];
+    return levels[5];
   }
 
   function todayStr() {
