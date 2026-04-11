@@ -258,6 +258,45 @@
       color: #3d3d58;
       padding: 12px 0;
     }
+
+    /* メモ入力 */
+    .memo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .memo-label {
+      font-size: 13px;
+      color: #64748b;
+      white-space: nowrap;
+    }
+
+    .memo-input {
+      flex: 1;
+      background: #1e1e2e;
+      border: 1.5px solid #2d2d42;
+      border-radius: 10px;
+      color: #e2e8f0;
+      font-size: 14px;
+      font-family: inherit;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .memo-input::placeholder {
+      color: #3d3d58;
+    }
+
+    .memo-input:focus {
+      border-color: #4f4f72;
+    }
+
+    .log-memo {
+      color: #64748b;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
@@ -293,6 +332,11 @@
       <span class="count" id="count-sake">0</span>
     </button>
     <div class="drink-btn-placeholder"></div>
+  </div>
+
+  <div class="memo-wrap">
+    <span class="memo-label">メモ</span>
+    <input type="text" class="memo-input" id="memoInput" placeholder="例：ギネス、赤ワイン…" maxlength="30">
   </div>
 
   <div class="summary-cards">
@@ -398,8 +442,15 @@
     return `${h}:${m}:${s}`;
   }
 
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   function addLog(type, action) {
-    state.logs.unshift({ time: nowTimeStr(), type, action });
+    const memo = document.getElementById('memoInput').value.trim();
+    const entry = { time: nowTimeStr(), type, action };
+    if (memo) entry.memo = memo;
+    state.logs.unshift(entry);
   }
 
   function renderLog() {
@@ -413,10 +464,13 @@
     list.innerHTML = logs.map(entry => {
       const meta = DRINK_META[entry.type];
       const isPlus = entry.action === '+1';
+      const memoHtml = entry.memo
+        ? ` <span class="log-memo">· ${escapeHtml(entry.memo)}</span>`
+        : '';
       return `<div class="log-item">
         <span class="log-time">${entry.time}</span>
         <span class="log-icon">${meta.icon}</span>
-        <span class="log-drink">${meta.label}</span>
+        <span class="log-drink">${meta.label}${memoHtml}</span>
         <span class="log-action ${isPlus ? 'plus' : 'minus'}">${entry.action}</span>
       </div>`;
     }).join('');
