@@ -521,6 +521,7 @@
     const entry = { time: nowTimeStr(), type, action };
     if (memo) entry.memo = memo;
     state.logs.unshift(entry);
+    if (memo) document.getElementById('memoInput').value = '';
   }
 
   function renderLog() {
