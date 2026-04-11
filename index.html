@@ -218,6 +218,99 @@
     .reset-btn:active {
       background: rgba(248, 113, 113, 0.1);
     }
+
+    /* 操作ログ */
+    .log-section {
+      background: #1e1e2e;
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid #2d2d42;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .log-title {
+      font-size: 13px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .log-count {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .log-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .log-list::-webkit-scrollbar-track {
+      background: #2d2d42;
+      border-radius: 999px;
+    }
+
+    .log-list::-webkit-scrollbar-thumb {
+      background: #4f4f72;
+      border-radius: 999px;
+    }
+
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 10px;
+      background: #16162a;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .log-time {
+      color: #64748b;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      min-width: 54px;
+    }
+
+    .log-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .log-drink {
+      color: #cbd5e1;
+      flex: 1;
+    }
+
+    .log-action {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .log-action.plus  { color: #4ade80; }
+    .log-action.minus { color: #f87171; }
+
+    .log-empty {
+      text-align: center;
+      font-size: 13px;
+      color: #3d3d58;
+      padding: 12px 0;
+    }
   </style>
 </head>
 <body>
@@ -285,11 +378,29 @@
   </div>
 
   <button class="reset-btn" id="resetBtn">今日のカウントをリセット</button>
+
+  <div class="log-section">
+    <div class="log-header">
+      <span class="log-title">操作ログ</span>
+      <span class="log-count" id="logCount">0件</span>
+    </div>
+    <div class="log-list" id="logList">
+      <p class="log-empty">まだ記録がありません</p>
+    </div>
+  </div>
 </div>
 
 <script>
   const STORAGE_KEY = 'drink_counter_v1';
   const WEEKLY_GOAL = 5;
+
+  const DRINK_META = {
+    beer:     { icon: '🍺', label: 'ビール' },
+    wine:     { icon: '🍷', label: 'ワイン' },
+    sour:     { icon: '🍋', label: 'サワー/ジントニ' },
+    highball: { icon: '🥃', label: 'ハイボール' },
+    sake:     { icon: '🍶', label: '日本酒/焼酎' },
+  };
 
   const levels = [
     { lv: 0, score: 0,  label: '素面',     cls: 'lv0' },
@@ -329,13 +440,13 @@
     const raw = localStorage.getItem(STORAGE_KEY);
     const today = todayStr();
     if (!raw) {
-      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: 0 };
+      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: 0, logs: [] };
     }
     const saved = JSON.parse(raw);
     if (saved.date !== today) {
-      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: saved.weekly ?? 0 };
+      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: saved.weekly ?? 0, logs: [] };
     }
-    return { highball: 0, sake: 0, ...saved };
+    return { highball: 0, sake: 0, logs: [], ...saved };
   }
 
   function saveData(data) {
@@ -343,6 +454,38 @@
   }
 
   let state = loadData();
+
+  function nowTimeStr() {
+    const d = new Date();
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    const s = String(d.getSeconds()).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
+  function addLog(type, action) {
+    state.logs.unshift({ time: nowTimeStr(), type, action });
+  }
+
+  function renderLog() {
+    const list = document.getElementById('logList');
+    const logs = state.logs;
+    document.getElementById('logCount').textContent = `${logs.length}件`;
+    if (logs.length === 0) {
+      list.innerHTML = '<p class="log-empty">まだ記録がありません</p>';
+      return;
+    }
+    list.innerHTML = logs.map(entry => {
+      const meta = DRINK_META[entry.type];
+      const isPlus = entry.action === '+1';
+      return `<div class="log-item">
+        <span class="log-time">${entry.time}</span>
+        <span class="log-icon">${meta.icon}</span>
+        <span class="log-drink">${meta.label}</span>
+        <span class="log-action ${isPlus ? 'plus' : 'minus'}">${entry.action}</span>
+      </div>`;
+    }).join('');
+  }
 
   function render() {
     document.getElementById('dateDisplay').textContent = todayDisplay();
@@ -363,6 +506,8 @@
 
     document.getElementById('drinkLabel').textContent = lvInfo.label;
     document.getElementById('drinkScore').textContent = lvInfo.score;
+
+    renderLog();
 
     // 週間ゲージ
     const weekly = state.weekly;
@@ -407,6 +552,7 @@
         if (before > 0) {
           state[type]--;
           state.weekly = Math.max(0, state.weekly - 1);
+          addLog(type, '-1');
           saveData(state);
           render();
           vibrate(30);
@@ -422,6 +568,7 @@
         // +1
         state[type]++;
         state.weekly++;
+        addLog(type, '+1');
         saveData(state);
         render();
         vibrate(15);
@@ -457,6 +604,7 @@
     state.sake = 0;
     state.weekly = Math.max(0, state.weekly - todayTotal);
     state.date = todayStr();
+    state.logs = [];
     saveData(state);
     render();
   });
