@@ -142,59 +142,6 @@
     .lv4 { color: #ef4444; }
     .lv5 { color: #dc2626; }
 
-    /* 週間ゲージ */
-    .weekly-section {
-      background: #1e1e2e;
-      border-radius: 14px;
-      padding: 16px;
-      border: 1px solid #2d2d42;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .weekly-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .weekly-title {
-      font-size: 13px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-
-    .weekly-count {
-      font-size: 14px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .progress-track {
-      width: 100%;
-      height: 10px;
-      background: #2d2d42;
-      border-radius: 999px;
-      overflow: hidden;
-    }
-
-    .progress-fill {
-      height: 100%;
-      border-radius: 999px;
-      transition: width 0.3s ease, background 0.3s ease;
-    }
-
-    .progress-fill.green  { background: #4ade80; }
-    .progress-fill.orange { background: #fb923c; }
-    .progress-fill.red    { background: #f87171; }
-
-    .weekly-warning {
-      font-size: 12px;
-      color: #f87171;
-      text-align: center;
-    }
-
     /* リセットボタン */
     .reset-btn {
       background: transparent;
@@ -366,17 +313,6 @@
     </div>
   </div>
 
-  <div class="weekly-section">
-    <div class="weekly-header">
-      <span class="weekly-title">週間ゲージ（目標: 5缶 / 週）</span>
-      <span class="weekly-count" id="weeklyCount">0 / 5缶</span>
-    </div>
-    <div class="progress-track">
-      <div class="progress-fill green" id="progressFill" style="width:0%"></div>
-    </div>
-    <p class="weekly-warning" id="weeklyWarning" style="display:none">⚠ 週間目標を超過しています</p>
-  </div>
-
   <button class="reset-btn" id="resetBtn">今日のカウントをリセット</button>
 
   <div class="log-section">
@@ -392,7 +328,6 @@
 
 <script>
   const STORAGE_KEY = 'drink_counter_v1';
-  const WEEKLY_GOAL = 5;
 
   const DRINK_META = {
     beer:     { icon: '🍺', label: 'ビール' },
@@ -440,11 +375,11 @@
     const raw = localStorage.getItem(STORAGE_KEY);
     const today = todayStr();
     if (!raw) {
-      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: 0, logs: [] };
+      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, logs: [] };
     }
     const saved = JSON.parse(raw);
     if (saved.date !== today) {
-      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, weekly: saved.weekly ?? 0, logs: [] };
+      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, logs: [] };
     }
     return { highball: 0, sake: 0, logs: [], ...saved };
   }
@@ -508,29 +443,6 @@
     document.getElementById('drinkScore').textContent = lvInfo.score;
 
     renderLog();
-
-    // 週間ゲージ
-    const weekly = state.weekly;
-    const pct = Math.min((weekly / WEEKLY_GOAL) * 100, 100);
-    const fill = document.getElementById('progressFill');
-    fill.style.width = pct + '%';
-
-    const weeklyCountEl = document.getElementById('weeklyCount');
-    weeklyCountEl.textContent = `${weekly} / ${WEEKLY_GOAL}缶`;
-
-    if (weekly > WEEKLY_GOAL) {
-      fill.className = 'progress-fill red';
-      weeklyCountEl.style.color = '#f87171';
-      document.getElementById('weeklyWarning').style.display = 'block';
-    } else if (weekly >= WEEKLY_GOAL * 0.8) {
-      fill.className = 'progress-fill orange';
-      weeklyCountEl.style.color = '#fb923c';
-      document.getElementById('weeklyWarning').style.display = 'none';
-    } else {
-      fill.className = 'progress-fill green';
-      weeklyCountEl.style.color = '#4ade80';
-      document.getElementById('weeklyWarning').style.display = 'none';
-    }
   }
 
   // ボタンの長押し処理
@@ -551,7 +463,6 @@
         const before = state[type];
         if (before > 0) {
           state[type]--;
-          state.weekly = Math.max(0, state.weekly - 1);
           addLog(type, '-1');
           saveData(state);
           render();
@@ -567,7 +478,6 @@
       if (!isLongPress) {
         // +1
         state[type]++;
-        state.weekly++;
         addLog(type, '+1');
         saveData(state);
         render();
@@ -596,13 +506,11 @@
   // リセット
   document.getElementById('resetBtn').addEventListener('click', () => {
     if (!confirm('今日のカウントをリセットしますか？')) return;
-    const todayTotal = state.beer + state.wine + state.sour + state.highball + state.sake;
     state.beer = 0;
     state.wine = 0;
     state.sour = 0;
     state.highball = 0;
     state.sake = 0;
-    state.weekly = Math.max(0, state.weekly - todayTotal);
     state.date = todayStr();
     state.logs = [];
     saveData(state);
