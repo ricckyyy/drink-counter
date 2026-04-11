@@ -297,6 +297,74 @@
       color: #64748b;
       font-size: 12px;
     }
+
+    /* ログ メモ編集 */
+    .log-edit-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #3d3d58;
+      font-size: 13px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      transition: color 0.15s;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .log-edit-btn:hover { color: #94a3b8; }
+
+    .log-drink-edit {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .log-drink-name {
+      color: #cbd5e1;
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-size: 13px;
+    }
+
+    .log-memo-input {
+      flex: 1;
+      min-width: 0;
+      background: #0f0f1a;
+      border: 1px solid #4f4f72;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 12px;
+      font-family: inherit;
+      padding: 3px 8px;
+      outline: none;
+    }
+
+    .log-memo-input:focus {
+      border-color: #6366f1;
+    }
+
+    .log-save-btn,
+    .log-cancel-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      line-height: 1;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .log-save-btn  { color: #4ade80; }
+    .log-cancel-btn { color: #f87171; }
   </style>
 </head>
 <body>
@@ -433,6 +501,7 @@
   }
 
   let state = loadData();
+  let editingIndex = -1;
 
   function nowTimeStr() {
     const d = new Date();
@@ -447,6 +516,7 @@
   }
 
   function addLog(type, action) {
+    editingIndex = -1;
     const memo = document.getElementById('memoInput').value.trim();
     const entry = { time: nowTimeStr(), type, action };
     if (memo) entry.memo = memo;
@@ -461,19 +531,41 @@
       list.innerHTML = '<p class="log-empty">まだ記録がありません</p>';
       return;
     }
-    list.innerHTML = logs.map(entry => {
+    list.innerHTML = logs.map((entry, i) => {
       const meta = DRINK_META[entry.type];
       const isPlus = entry.action === '+1';
+
+      if (editingIndex === i) {
+        const memoVal = entry.memo ? escapeHtml(entry.memo) : '';
+        return `<div class="log-item" data-index="${i}">
+          <span class="log-time">${entry.time}</span>
+          <span class="log-icon">${meta.icon}</span>
+          <span class="log-drink-edit">
+            <span class="log-drink-name">${meta.label}</span>
+            <input class="log-memo-input" type="text" maxlength="30" value="${memoVal}" placeholder="メモ…" data-index="${i}" autocomplete="off">
+          </span>
+          <button class="log-save-btn" data-action="save" data-index="${i}" title="保存">✓</button>
+          <button class="log-cancel-btn" data-action="cancel" title="キャンセル">✗</button>
+          <span class="log-action ${isPlus ? 'plus' : 'minus'}">${entry.action}</span>
+        </div>`;
+      }
+
       const memoHtml = entry.memo
         ? ` <span class="log-memo">· ${escapeHtml(entry.memo)}</span>`
         : '';
-      return `<div class="log-item">
+      return `<div class="log-item" data-index="${i}">
         <span class="log-time">${entry.time}</span>
         <span class="log-icon">${meta.icon}</span>
         <span class="log-drink">${meta.label}${memoHtml}</span>
+        <button class="log-edit-btn" data-action="edit" data-index="${i}" title="メモを編集">✎</button>
         <span class="log-action ${isPlus ? 'plus' : 'minus'}">${entry.action}</span>
       </div>`;
     }).join('');
+
+    if (editingIndex !== -1) {
+      const input = list.querySelector('.log-memo-input');
+      if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+    }
   }
 
   function render() {
@@ -560,6 +652,7 @@
   // リセット
   document.getElementById('resetBtn').addEventListener('click', () => {
     if (!confirm('今日のカウントをリセットしますか？')) return;
+    editingIndex = -1;
     state.beer = 0;
     state.wine = 0;
     state.sour = 0;
@@ -569,6 +662,51 @@
     state.logs = [];
     saveData(state);
     render();
+  });
+
+  // ログ メモ編集
+  const logList = document.getElementById('logList');
+
+  function saveMemo(idx) {
+    const input = logList.querySelector('.log-memo-input');
+    if (input) {
+      const memo = input.value.trim();
+      if (memo) {
+        state.logs[idx].memo = memo;
+      } else {
+        delete state.logs[idx].memo;
+      }
+      saveData(state);
+    }
+    editingIndex = -1;
+    renderLog();
+  }
+
+  logList.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const idx = parseInt(btn.dataset.index, 10);
+    if (action === 'edit') {
+      editingIndex = idx;
+      renderLog();
+    } else if (action === 'save') {
+      saveMemo(idx);
+    } else if (action === 'cancel') {
+      editingIndex = -1;
+      renderLog();
+    }
+  });
+
+  logList.addEventListener('keydown', e => {
+    if (!e.target.classList.contains('log-memo-input')) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveMemo(editingIndex);
+    } else if (e.key === 'Escape') {
+      editingIndex = -1;
+      renderLog();
+    }
   });
 
   render();
