@@ -311,7 +311,8 @@
     }
 
     /* ログ メモ編集 */
-    .log-edit-btn {
+    .log-edit-btn,
+    .log-delete-btn {
       background: none;
       border: none;
       cursor: pointer;
@@ -327,6 +328,7 @@
     }
 
     .log-edit-btn:hover { color: #94a3b8; }
+    .log-delete-btn:hover { color: #f87171; }
 
     .log-drink-edit {
       display: flex;
@@ -571,6 +573,7 @@
         <span class="log-icon">${meta.icon}</span>
         <span class="log-drink">${meta.label}${memoHtml}</span>
         <button class="log-edit-btn" data-action="edit" data-index="${i}" title="メモを編集">✎</button>
+        <button class="log-delete-btn" data-action="delete" data-index="${i}" title="削除">✕</button>
         <span class="log-action ${isPlus ? 'plus' : 'minus'}">${entry.action}</span>
       </div>`;
     }).join('');
@@ -708,6 +711,17 @@
     } else if (action === 'cancel') {
       editingIndex = -1;
       renderLog();
+    } else if (action === 'delete') {
+      const entry = state.logs[idx];
+      if (entry.action === '+1' && state[entry.type] > 0) {
+        state[entry.type]--;
+      } else if (entry.action === '-1') {
+        state[entry.type]++;
+      }
+      state.logs.splice(idx, 1);
+      if (editingIndex === idx) editingIndex = -1;
+      saveData(state);
+      render();
     }
   });
 
