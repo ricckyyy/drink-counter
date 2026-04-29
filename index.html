@@ -499,14 +499,10 @@
 
   function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
-    const today = todayStr();
     if (!raw) {
-      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, logs: [] };
+      return { date: todayStr(), beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, logs: [] };
     }
     const saved = JSON.parse(raw);
-    if (saved.date !== today) {
-      return { date: today, beer: 0, wine: 0, sour: 0, highball: 0, sake: 0, logs: [] };
-    }
     return { highball: 0, sake: 0, logs: [], ...saved };
   }
 
